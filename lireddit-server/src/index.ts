@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { MikroORM } from "@mikro-orm/core";
-import { __prod__ } from "./constants";
+import { __prod__, COOKIE_NAME } from "./constants";
 import microConfig from "./mikro-orm.config";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
@@ -24,22 +24,20 @@ const main = async () => {
 
   app.use(
     cors({
-      origin: "http://127.0.0.1:3000",
+      origin: "http://localhost:3001",
       credentials: true
     })
   );
 
-  app.set("trust proxy", 1);
-
   app.use(
     session({
-      name: "wookie",
+      name: COOKIE_NAME,
       store: new RedisStore({
         client: redisClient,
         disableTouch: true
       }),
       cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // Ten years
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
         httpOnly: true,
         secure: __prod__, // cookie only work on https
         sameSite: "lax"

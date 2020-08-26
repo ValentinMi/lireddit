@@ -12,6 +12,7 @@ import { MyContext } from "../types";
 import { User, validateUser as validate } from "../entities/User";
 import argon2 from "argon2";
 import { EntityManager } from "@mikro-orm/postgresql";
+import { COOKIE_NAME } from "../constants";
 
 // TYPES
 
@@ -21,6 +22,8 @@ class UsernamePasswordInput {
   username: string;
   @Field()
   password: string;
+  @Field()
+  email: string;
 }
 
 @ObjectType()
@@ -42,11 +45,16 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  // FORGOT PASSWORD
+  @Mutation(() => Boolean)
+  async forgotPassword(@Arg("email") email: string, @Ctx() { em }: MyContext) {
+    const user = await em.findOne(User, { email });
+    return true;
+  }
+
   // ME
   @Query(() => User, { nullable: true })
   async me(@Ctx() { req, em }: MyContext) {
-    console.log("session: ", req.session);
-
     // Not logged in
     if (!req.session.userId) {
       return null;
@@ -84,6 +92,7 @@ export class UserResolver {
         .insert({
           username: options.username,
           password: hashedPassword,
+          email: options.email,
           created_at: new Date(),
           updated_at: new Date()
         })
@@ -114,10 +123,16 @@ export class UserResolver {
   // LOGIN
   @Mutation(() => UserResponse)
   async login(
-    @Arg("options") options: UsernamePasswordInput,
+    @Arg("usernameOrEmail") usernameOrEmail: string,
+    @Arg("password") password: string,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    const user = await em.findOne(User, { username: options.username });
+    const user = await em.findOne(
+      User,
+      usernameOrEmail.includes("@")
+        ? { email: usernameOrEmail }
+        : { username: usernameOrEmail }
+    );
     if (!user) {
       return {
         errors: [
@@ -129,7 +144,7 @@ export class UserResolver {
       };
     }
 
-    const valid = await argon2.verify(user.password, options.password);
+    const valid = await argon2.verify(user.password, password);
     if (!valid) {
       return {
         errors: [
@@ -147,5 +162,22 @@ export class UserResolver {
     return {
       user
     };
+  }
+
+  // LOGOUT
+  @Mutation(() => Boolean)
+  logout(@Ctx() { req, res }: MyContext) {
+    return new Promise(resolve =>
+      req.session.destroy(err => {
+        res.clearCookie(COOKIE_NAME);
+        if (err) {
+          console.log(err);
+          resolve(false);
+          return;
+        }
+
+        resolve(true);
+      })
+    );
   }
 }

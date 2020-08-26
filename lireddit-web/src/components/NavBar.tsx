@@ -1,13 +1,16 @@
 import React from "react";
-import { Box, Link, Flex } from "@chakra-ui/core";
+import { Box, Link, Flex, Button } from "@chakra-ui/core";
 import NextLink from "next/link";
-import { useMeQuery } from "../generated/graphql";
+import { useMeQuery, useLogoutMutation } from "../generated/graphql";
+import { isServer } from "../utils/isServer";
 
 interface NavBarProps {}
 
 const NavBar: React.FC<NavBarProps> = ({}) => {
-  const [{ data, fetching }] = useMeQuery();
-  console.log(data);
+  const [{ fetching: logoutFetching }, logout] = useLogoutMutation();
+  const [{ data, fetching }] = useMeQuery({
+    pause: isServer()
+  });
   let body = null;
 
   // Data is loading
@@ -29,10 +32,23 @@ const NavBar: React.FC<NavBarProps> = ({}) => {
     );
     // User is logged in
   } else {
-    body = <Box>{data.me.username}</Box>;
+    body = (
+      <Flex>
+        <Box mr={2}>{data.me.username}</Box>
+        <Button
+          onClick={() => {
+            logout();
+          }}
+          variant="link"
+          isLoading={logoutFetching}
+        >
+          Logout
+        </Button>
+      </Flex>
+    );
   }
   return (
-    <Flex bg="tomato" p={4}>
+    <Flex bg="tan" p={4}>
       <Box>{body}</Box>
     </Flex>
   );

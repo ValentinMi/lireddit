@@ -1,6 +1,7 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 import { ObjectType, Field, Int } from "type-graphql";
 import Joi from "joi";
+import { UsernamePasswordInput } from "src/resolvers/UsernamePasswordInput";
 
 @ObjectType()
 @Entity()
@@ -17,6 +18,10 @@ export class User {
   @Property({ type: "date", onUpdate: () => new Date() })
   updatedAt = new Date();
 
+  @Field(() => String)
+  @Property({ type: "text", unique: true })
+  email!: string;
+
   @Field()
   @Property({ type: "text", unique: true })
   username!: string;
@@ -26,13 +31,13 @@ export class User {
   password!: string;
 }
 
-export const validateUser = (user: {
-  username: String;
-  password: String;
-}): Joi.ValidationResult => {
+export const validateUser = (
+  user: UsernamePasswordInput
+): Joi.ValidationResult => {
   const schema = Joi.object({
     username: Joi.string().min(2).max(255).required(),
-    password: Joi.string().min(5).max(1055).required()
+    password: Joi.string().min(5).max(1055).required(),
+    email: Joi.string().email().required()
   });
 
   return schema.validate(user);
