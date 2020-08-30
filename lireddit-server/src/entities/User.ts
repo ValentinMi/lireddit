@@ -34,11 +34,15 @@ export class User {
 export const validateUser = (
   user: UsernamePasswordInput
 ): Joi.ValidationResult => {
-  const schema = Joi.object({
+  return Joi.object({
     username: Joi.string().min(2).max(255).required(),
     password: Joi.string().min(5).max(1055).required(),
     email: Joi.string().email().required()
-  });
+  }).validate(user);
+};
 
-  return schema.validate(user);
+export const validateNewPassword = (
+  newPassword: string
+): Joi.ValidationResult => {
+  return Joi.string().min(5).max(1055).required().validate(newPassword);
 };

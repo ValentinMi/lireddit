@@ -9,7 +9,11 @@ import {
   Query
 } from "type-graphql";
 import { MyContext } from "../types";
-import { User, validateUser as validate } from "../entities/User";
+import {
+  User,
+  validateUser as validate,
+  validateNewPassword
+} from "../entities/User";
 import argon2 from "argon2";
 import { EntityManager } from "@mikro-orm/postgresql";
 import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from "../constants";
@@ -46,6 +50,61 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  // CHANGE PASSWORD
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg("token") token: string,
+    @Arg("newPassword") newPassword: string,
+    @Ctx() { redis, em, req }: MyContext
+  ): Promise<UserResponse> {
+    // Validate with Joi
+    const { error } = validateNewPassword(newPassword);
+    if (error)
+      return {
+        errors: [
+          {
+            field: "newPassword",
+            message: error.message
+          }
+        ]
+      };
+
+    const key = FORGET_PASSWORD_PREFIX + token;
+    const userId = await redis.get(key);
+    if (!userId) {
+      return {
+        errors: [
+          {
+            field: "token",
+            message: "token expired"
+          }
+        ]
+      };
+    }
+
+    const user = await em.findOne(User, { id: parseInt(userId) });
+    if (!user) {
+      return {
+        errors: [
+          {
+            field: "token",
+            message: "user no longer exists"
+          }
+        ]
+      };
+    }
+
+    user.password = await argon2.hash(newPassword);
+    await em.persistAndFlush(user);
+
+    await redis.del(key);
+
+    // Log in user after change password
+    req.session.userId = user.id;
+
+    return { user };
+  }
+
   // FORGOT PASSWORD
   @Mutation(() => Boolean)
   async forgotPassword(

@@ -1,8 +1,9 @@
 import React from "react";
+import NextLink from "next/link";
 import { Formik, Form } from "formik";
 import InputField from "../components/InputField";
 import Wrapper from "../components/Wrapper";
-import { Box, Button } from "@chakra-ui/core";
+import { Box, Button, Link } from "@chakra-ui/core";
 import { useLoginMutation } from "../generated/graphql";
 import { toErrorMap } from "../utils/toErrorMap";
 import { useRouter } from "next/router";
@@ -18,7 +19,7 @@ const Login: React.FC<loginProps> = ({}) => {
   return (
     <Wrapper>
       <Formik
-        initialValues={{ username: "", password: "" }}
+        initialValues={{ usernameOrEmail: "", password: "" }}
         onSubmit={async (values, { setErrors }) => {
           const response = await login(values);
           console.log(response);
@@ -56,6 +57,11 @@ const Login: React.FC<loginProps> = ({}) => {
           </Form>
         )}
       </Formik>
+      <Box mt={3}>
+        <NextLink href="/forgot-password">
+          <Link>Forgot password ?</Link>
+        </NextLink>
+      </Box>
     </Wrapper>
   );
 };
