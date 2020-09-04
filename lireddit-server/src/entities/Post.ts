@@ -1,22 +1,55 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 import { ObjectType, Field, Int } from "type-graphql";
+import {
+  UpdateDateColumn,
+  CreateDateColumn,
+  PrimaryGeneratedColumn,
+  Column,
+  Entity,
+  BaseEntity,
+  ManyToOne
+} from "typeorm";
+import { User } from "./User";
+import Joi from "joi";
+import { PostInput } from "../resolvers/post";
 
 @ObjectType()
 @Entity()
-export class Post {
+export class Post extends BaseEntity {
   @Field(() => Int)
-  @PrimaryKey()
+  @PrimaryGeneratedColumn()
   id!: number;
 
-  @Field(() => String)
-  @Property({ type: "date" })
-  createdAt = new Date();
-
-  @Field(() => String)
-  @Property({ type: "date", onUpdate: () => new Date() })
-  updatedAt = new Date();
+  @Field()
+  @Column()
+  title!: string;
 
   @Field()
-  @Property({ type: "text" })
-  title!: string;
+  @Column()
+  text!: string;
+
+  @Field()
+  @Column({ type: "int", default: 0 })
+  points!: number;
+
+  @Field()
+  @Column()
+  creatorId: number;
+
+  @ManyToOne(() => User, user => user.posts)
+  creator: User;
+
+  @Field(() => String)
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @Field(() => String)
+  @UpdateDateColumn()
+  updatedAt: Date;
 }
+
+export const validatePost = (post: PostInput): Joi.ValidationResult => {
+  return Joi.object({
+    title: Joi.string().min(1).max(255).required(),
+    text: Joi.string().min(1).max(1055).required()
+  }).validate(post);
+};

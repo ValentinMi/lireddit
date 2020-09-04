@@ -3,7 +3,7 @@ import NextLink from "next/link";
 import { Formik, Form } from "formik";
 import InputField from "../components/InputField";
 import Wrapper from "../components/Wrapper";
-import { Box, Button, Link } from "@chakra-ui/core";
+import { Box, Button, Link, Flex } from "@chakra-ui/core";
 import { useLoginMutation } from "../generated/graphql";
 import { toErrorMap } from "../utils/toErrorMap";
 import { useRouter } from "next/router";
@@ -26,8 +26,12 @@ const Login: React.FC<loginProps> = ({}) => {
           if (response.data?.login.errors) {
             setErrors(toErrorMap(response.data.login.errors));
           } else if (response.data?.login.user) {
-            // Worked
-            router.push("/");
+            if (typeof router.query.next === "string") {
+              router.push(router.query.next);
+            } else {
+              // Worked
+              router.push("/");
+            }
           }
         }}
       >
@@ -46,6 +50,11 @@ const Login: React.FC<loginProps> = ({}) => {
                 type="password"
               />
             </Box>
+            <Flex mt={3}>
+              <NextLink href="/forgot-password">
+                <Link ml="auto">Forgot password ?</Link>
+              </NextLink>
+            </Flex>
             <Button
               mt={4}
               type="submit"
@@ -57,11 +66,6 @@ const Login: React.FC<loginProps> = ({}) => {
           </Form>
         )}
       </Formik>
-      <Box mt={3}>
-        <NextLink href="/forgot-password">
-          <Link>Forgot password ?</Link>
-        </NextLink>
-      </Box>
     </Wrapper>
   );
 };
