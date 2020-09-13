@@ -7,12 +7,14 @@ import {
   Field,
   Ctx,
   UseMiddleware,
-  Int
+  Int,
+  FieldResolver,
+  Root
 } from "type-graphql";
 import { Post, validatePost } from "../entities/Post";
-import { MyContext } from "../types";
 import { isAuth } from "../middlewares/isAuth";
 import { getConnection } from "typeorm";
+import { MyContext } from "src/types";
 
 @InputType()
 export class PostInput {
@@ -22,8 +24,13 @@ export class PostInput {
   text: string;
 }
 
-@Resolver()
+@Resolver(Post)
 export class PostResolver {
+  @FieldResolver(() => String)
+  textSnippet(@Root() root: Post) {
+    return root.text.slice(0, 50);
+  }
+
   // READ ALL
   @Query(() => [Post])
   posts(
@@ -67,7 +74,7 @@ export class PostResolver {
         ]
       };
 
-    return Post.create({ ...input, creatorId: req.session.userId }).save();
+    return Post.create({ ...input, creatorid: req.session.userId }).save();
   }
 
   // UPDATE
